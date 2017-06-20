@@ -1,0 +1,15 @@
+apiVersion: v1
+name: elixir
+version: 0.1.0
+description: A Kubernetes Helm chart for Elixir applications.
+keywords:
+- elixir
+- erlang
+home: https://elixir-lang.org/
+icon: https://elixir-lang.org/images/logo/logo.png
+sources:
+- https://github.com/Nebo15/k8s.charts
+- https://hub.docker.com/r/nebo15/alpine-elixir
+maintainers:
+- name: andrewdryga
+engine: gotpl

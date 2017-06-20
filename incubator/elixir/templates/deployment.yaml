@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: {{ default "default" .Values.namespace | quote }}
+  name: {{ .Values.applicationName }}
+  labels:
+    app: {{ .Values.applicationName }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ default 3 .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      app: {{ .Values.applicationName }}
+  strategy:
+{{ toYaml .Values.deploymentStrategy | indent 6 }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.applicationName }}
+        version: {{ .Chart.Version | replace "+" "_" | quote}}
+      # Update the deployment itself when config changes
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ default "" .Values.image.pullPolicy | quote }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+          protocol: TCP
+          name: internal-port
+        env:
+        # Phoenix
+        - name: PORT
+          value: "{{ .Values.service.internalPort }}"
+        - name: HOST
+          value: "{{ default "localhost" .Values.service.host }}"
+        - name: POD_IP
+          valueFrom: { fieldRef: { fieldPath: status.podIP } }
+        - name: ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.applicationName }}
+              key: erlang-cookie
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.applicationName }}
+              key: secret-key
+{{ if .Values.environment }}
+{{ toYaml .Values.environment | indent 8 }}
+{{ end }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        readinessProbe:
+          timeoutSeconds: 2
+          initialDelaySeconds: 5
+          failureThreshold: 3
+          tcpSocket:
+            port: internal-port
+        livenessProbe:
+          timeoutSeconds: 2
+          initialDelaySeconds: 5
+          failureThreshold: 3
+          tcpSocket:
+            port: internal-port
+{{ if .Values.environment }}
+      nodeSelector:
+        cloud.google.com/gke-nodepool: {{ .Values.nodesPool }}
+{{ end }}

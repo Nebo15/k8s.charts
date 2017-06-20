@@ -1,0 +1,41 @@
+# Default values for elixir.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+namespace: "default"
+applicationName: "my_app"
+nodesPool: "application-workloads"
+replicaCount: 1
+image:
+  repository: nebo15/alpine-elixir
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  host: "localhost"
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 80
+  externalIPs: []
+  # loadBalancerIP: 127.0.0.1
+secrets:
+  erlangCookie: "hellomyfriend"
+  encryptionSecretKey: "phoenixissecured"
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+environment:
+  - name: APP_MIGRATE
+    value: "true"
+
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 2
+    maxUnavailable: 0
+
+postgresql:
+  user: "hello"
