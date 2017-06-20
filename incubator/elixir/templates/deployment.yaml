@@ -1,12 +1,17 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  namespace: {{ default "default" .Values.namespace | quote }}
+  namespace: {{ default "default" .Values.global.namespace | quote }}
   name: {{ .Values.applicationName }}
   labels:
     app: {{ .Values.applicationName }}
+    # This makes it easy to audit chart usage.
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    # This makes it easy to search for all components of a release using kubectl.
     release: "{{ .Release.Name }}"
+    # The "heritage" label is used to track which tool deployed a given chart.
+    # It is useful for admins who want to see what releases a particular tool
+    # is responsible for.
     heritage: "{{ .Release.Service }}"
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -28,7 +33,7 @@ spec:
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ default "" .Values.image.pullPolicy | quote }}
+        imagePullPolicy: {{ default "IfNotPresent" .Values.image.pullPolicy | quote }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
           protocol: TCP
@@ -53,6 +58,26 @@ spec:
               key: secret-key
 {{ if .Values.environment }}
 {{ toYaml .Values.environment | indent 8 }}
+{{ end }}
+{{ if .Values.postgresql }}
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.applicationName }}
+              key: erlang-cookie
+        - name: DB_USER
+          value: "db"
+        - name: DB_PASSWORD
+          value: "sDk39SkDkSdjlj38eovnehq"
+        - name: DB_HOST
+          value: "db-svc"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_POOL_SIZE
+          value: "50"
+        # App migrations
+        - name: DB_MIGRATE
+          value: "true"
 {{ end }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}

@@ -1,24 +1,62 @@
-# Default values for elixir.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-namespace: "default"
-applicationName: "my_app"
+global:
+  ### Namespace in which this application and it's dependencies should live.
+  ##
+  namespace: "default"
+
+  ### Name of the application to ease kubectl access to the resources.
+  ##
+  applicationName: "my_app"
+
+### If application should be scheduled to a specific nodes pool, set it here.
+##
 nodesPool: "application-workloads"
+
+### Number of replicas to run.
+##
 replicaCount: 1
+
+### Which image to use.
+##
 image:
   repository: nebo15/alpine-elixir
   tag: latest
   pullPolicy: IfNotPresent
+
 service:
+  ### Set a hostname on which application should expect connections.
+  ### Usually, this is a nice to have option and connections will be accepted on any host.
+  ##
   host: "localhost"
+
+  ### Set a service type to expose application
+  ### If it should be private - use "ClusterIP" type, if it's publicly available - "LoadBalancer".
+  ##
   type: ClusterIP
+
+  ### Port on which service exposes application
+  ##
   externalPort: 80
-  internalPort: 80
-  externalIPs: []
+
+  ### Port on container listens for connections
+  ##
+  internalPort: 4000
+
+  ### For LoadBalancer services it's nice to fix it's public IP, so you won't need to update DNS if Load Balancer is deleted.
+  ##
   # loadBalancerIP: 127.0.0.1
+
 secrets:
-  erlangCookie: "hellomyfriend"
-  encryptionSecretKey: "phoenixissecured"
+  ### Erlang distribution secret. Randomly generated if not set.
+  ##
+  # erlangCookie: "hellomyfriend"
+
+  ### Cookie encryption secret. Randomly generated if not set.
+  ##
+  # encryptionSecretKey: "phoenixissecured"
+
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
 resources:
   limits:
     cpu: 100m
@@ -27,10 +65,13 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+### Additional environment variables to set for application container
+##
 environment:
-  - name: APP_MIGRATE
-    value: "true"
 
+## Configure deployment strategy
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+##
 deploymentStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -38,4 +79,29 @@ deploymentStrategy:
     maxUnavailable: 0
 
 postgresql:
-  user: "hello"
+  ### Install PostgreSQL dependency
+  ##
+  install: true
+
+  ### PostgreSQL User to create.
+  ##
+  postgresUser: gogs
+
+  ## PostgreSQL Password for the new user.
+  ## If not set, a random 10 characters password will be used.
+  ##
+  postgresPassword: gogs
+
+  ## PostgreSQL Database to create.
+  ##
+  postgresDatabase: gogs
+
+  runMigrations: true
+
+  ## Persistent Volume Storage configuration.
+  ## ref: https://kubernetes.io/docs/user-guide/persistent-volumes
+  ##
+  persistence:
+    ## Enable PostgreSQL persistence using Persistent Volume Claims.
+    ##
+    enabled: true

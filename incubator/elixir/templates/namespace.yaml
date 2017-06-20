@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: {{ default "default" .Values.global.namespace | quote }}
+  labels:
+    name: {{ default "default" .Values.global.namespace | quote }}
